@@ -1,119 +1,85 @@
-#include <cstdio>
 #include <cstdlib> // for atoi
 #include <iostream>
-#include <fstream>
 
-#include <omp.h>
+#include "constants.hpp"
+#include "kokkos_shared.hpp"
+#include "mandelbrot.hpp"
+#include "write_screen.hpp"
+#include "write_ppm.hpp"
 
-#include "constants.h"
-#include "kokkos_shared.h"
-#include "mandelbrot.h"
+void compute_mandelbrot_set(int argc, char* argv[])
+{
+    int default_size = 8192;
+    if (argc>1)
+    {
+        default_size = std::atoi(argv[1]);
+    }
 
-#ifdef KOKKOS_ENABLE_CUDA
-#include "CudaTimer.h"
-#else // OpenMP
-#include "OpenMPTimer.h"
-#endif
+    std::cout << "Compute Mandelbrot set of size "
+              << default_size << "x"
+              << default_size << "\n";
 
-#include "write_screen.h"
-#include "write_ppm.h"
+    Constants constants(default_size);
 
-#include <unistd.h>
+    // prepare data array for Mandelbrot set computation
+    DataArray     image     = DataArray("image", constants.WIDTH, constants.HEIGHT);
+    DataArrayHost imageHost = Kokkos::create_mirror_view(image);
 
-using namespace std;
+    /*
+     * Actual computation
+     */
+    {
+        MandelbrotFunctor functor(image, constants);
+        using range2d_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>,
+                                                Kokkos::IndexType<int>>;
+        range2d_t range({0, 0}, {constants.WIDTH, constants.HEIGHT});
+        Kokkos::parallel_for(range, functor);
+        Kokkos::fence();
+    }
 
-// ==================================================================
-// ==================================================================
-// ==================================================================
-void compute_mandelbrot_set(int argc, char* argv[]) {
+    std::cout << "end of mandelbrot loop reached ...\n";
 
-#ifdef KOKKOS_ENABLE_CUDA
-  CudaTimer timer;
-#else
-  OpenMPTimer timer;
-#endif
-  
-  int default_size = 8192;
-  if (argc>1)
-    default_size = std::atoi(argv[1]);
+    // copy back results from device to host
+    Kokkos::deep_copy(imageHost, image);
 
-  printf("Compute Mandelbrot set of size %dx%d\n",default_size,default_size);
-  
-  Constants constants = Constants(default_size);
+    write_screen(imageHost, constants);
 
-  // prepare data array for Mandelbrot set computation
-  DataArray     image     = DataArray("image", constants.WIDTH,constants.HEIGHT);
-  DataArrayHost imageHost = Kokkos::create_mirror_view(image);
-
-  /*
-   * Actual computation (GPU with CUDA or CPU with OpenMP)
-   */
-  timer.start();
-
-  {
-    //using namespace Kokkos::Experimental;
-    MandelbrotFunctor functor(image, constants);
-    using range2d_t =
-      Kokkos::Experimental::MDRangePolicy< Kokkos::Experimental::Rank<2> ,
-					   Kokkos::IndexType<int> >;
-    range2d_t range( {0,0}, {constants.WIDTH,constants.HEIGHT} );
-    //Kokkos::Experimental::md_parallel_for(range, functor);
-    Kokkos::parallel_for(range, functor);
-  }
-  
-  timer.stop();
-  printf("end of mandelbrot loop reached ...\n");
-  printf("Compute time: %lf seconds.\n", timer.elapsed());
-  
-  // copy back results from device to host
-  Kokkos::deep_copy(imageHost,image);
-
-
-  write_screen(imageHost, constants);
-
-  // save color ppm file
-  if (0) {
-    std::string filename("mandelbrot.ppm");
-    save_ppm(imageHost, filename, constants);
-  }
-  printf("Compute time: %lf seconds.\n", timer.elapsed());
-
+    // save color ppm file
+    if (1)
+    {
+        std::string filename("mandelbrot.ppm");
+        save_ppm(imageHost, filename, constants);
+    }
 } // compute_mandelbrot_set
 
 //============================================================
 //============================================================
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
+    /*
+     * Initialize kokkos (host + device)
+     *
+     * If CUDA is enabled, Kokkos will try to use the default GPU, i.e. GPU #0 if you
+     * have multiple GPUs.
+     */
+    Kokkos::initialize(argc, argv);
 
-  /*
-   * Initialize kokkos (host + device)
-   * 
-   * If CUDA is enabled, Kokkos will try to use the default GPU, i.e. GPU #0 if you
-   * have multiple GPUs.
-   */
-  Kokkos::initialize(argc, argv);
-
-  {
     std::cout << "##########################\n";
     std::cout << "KOKKOS CONFIG             \n";
     std::cout << "##########################\n";
-    
-    std::ostringstream msg;
-    std::cout << "Kokkos configuration" << std::endl;
-    if ( Kokkos::hwloc::available() ) {
-      msg << "  hwloc( NUMA[" << Kokkos::hwloc::get_available_numa_count()
-          << "  ] x CORE["    << Kokkos::hwloc::get_available_cores_per_numa()
-          << "  ] x HT["      << Kokkos::hwloc::get_available_threads_per_core()
-          << "  ] )"
-          << std::endl ;
+    Kokkos::print_configuration(std::cout);
+    if (Kokkos::hwloc::available())
+    {
+        std::cout << "hwloc (NUMA[" << Kokkos::hwloc::get_available_numa_count()
+                  << "] x CORE["    << Kokkos::hwloc::get_available_cores_per_numa()
+                  << "] x HT["      << Kokkos::hwloc::get_available_threads_per_core()
+                  << "])\n";
     }
-    Kokkos::print_configuration( std::cout );
-    std::cout << msg.str();
-    std::cout << "##########################\n";
-  }
+    std::cout << "##########################" << std::endl;
 
-  compute_mandelbrot_set(argc,argv);  
-     
-  Kokkos::finalize();
+    compute_mandelbrot_set(argc, argv);
 
-  return 0;
+    Kokkos::finalize();
+
+    return EXIT_SUCCESS;
 }

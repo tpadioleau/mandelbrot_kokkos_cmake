@@ -1,9 +1,7 @@
-#ifndef KOKKOS_SHARED_H_
-#define KOKKOS_SHARED_H_
+#ifndef KOKKOS_SHARED_HPP_
+#define KOKKOS_SHARED_HPP_
 
 #include <Kokkos_Core.hpp>
-#include <Kokkos_Parallel.hpp>
-#include <Kokkos_View.hpp>
 
 using Device = Kokkos::DefaultExecutionSpace;
 
@@ -11,7 +9,7 @@ using Device = Kokkos::DefaultExecutionSpace;
 typedef Kokkos::View<unsigned char**, Device> DataArray;
 
 // host mirror
-typedef DataArray::HostMirror                 DataArrayHost;
+typedef DataArray::HostMirror DataArrayHost;
 
 /**
  * Retrieve cartesian coordinate from index, using memory layout information.
@@ -21,22 +19,24 @@ typedef DataArray::HostMirror                 DataArrayHost;
  * Prefer right layout for OpenMP execution space.
  */
 KOKKOS_INLINE_FUNCTION
-void index2coord(int index, int &i, int &j, int Nx, int Ny) {
+void index2coord(int index, int &i, int &j, int Nx, int Ny)
+{
 #ifdef KOKKOS_ENABLE_CUDA
-  j = index / Nx;
-  i = index - j*Nx;
+    j = index / Nx;
+    i = index - j*Nx;
 #else
-  i = index / Ny;
-  j = index - i*Ny;
+    i = index / Ny;
+    j = index - i*Ny;
 #endif
 }
 
 KOKKOS_INLINE_FUNCTION
-int coord2index(int i, int j, int Nx, int Ny) {
+int coord2index(int i, int j, int Nx, int Ny)
+{
 #ifdef KOKKOS_ENABLE_CUDA
-  return i + Nx*j; // left layout
+    return i + Nx*j; // left layout
 #else
-  return j + Ny*i; // right layout
+    return j + Ny*i; // right layout
 #endif
 }
 

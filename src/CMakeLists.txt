@@ -1,39 +1,12 @@
-# include header for main application
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
 #
 # mandelbrot_kokkos executable
 #
-if (KOKKOS_ENABLE_CUDA)
-  set(EXE_NAME "mandelbrot_kokkos_cuda")
-else()
-  set(EXE_NAME "mandelbrot_kokkos_openmp")
-endif()
-
-set (EXE_NAME_SRC
+add_executable(mandelbrot_kokkos
   main.cpp
-  constants.h
-  CudaTimer.h
-  write_ppm.h
   write_ppm.cpp
-  write_screen.h
-  write_screen.cpp
-  kokkos_shared.h
-  mandelbrot.h
-  )
+  write_screen.cpp)
 
-if (KOKKOS_ENABLE_OPENMP)
-  set (EXE_NAME_SRC
-    ${EXE_NAME_SRC}
-    OpenMPTimer.cpp
-    OpenMPTimer.h)
-endif()
+# pass Kokkos include directories to our target application
+target_include_directories(mandelbrot_kokkos PUBLIC ${Kokkos_INCLUDE_DIRS_RET})
 
-add_executable(${EXE_NAME}
-  ${EXE_NAME_SRC})
-
-target_link_libraries(${EXE_NAME} kokkos)
-if (KOKKOS_ENABLE_HWLOC)
-  target_link_libraries(${EXE_NAME} hwloc)
-endif()
-  
+target_link_libraries(mandelbrot_kokkos kokkos)

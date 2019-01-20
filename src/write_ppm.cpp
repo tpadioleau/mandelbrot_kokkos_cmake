@@ -1,27 +1,25 @@
-#include "write_ppm.h"
+#include "write_ppm.hpp"
 
-void save_ppm(DataArrayHost      imageHost,
+#include "constants.hpp"
+#include "kokkos_shared.hpp"
+
+#include <fstream>
+
+void save_ppm(DataArrayHost imageHost,
 	      const std::string& filename,
-	      const Constants&   constants)
+	      const Constants& constants)
 {
+    std::fstream myfile (filename, std::fstream::out | std::fstream::trunc);
 
-  FILE* myfile = fopen(filename.c_str(),"w");
-  
-  fprintf(myfile, "P6 %d %d 255\n", constants.WIDTH , constants.HEIGHT);
-  for(unsigned int i=0; i<constants.WIDTH; ++i) {
-    for(unsigned int j=0; j<constants.HEIGHT; ++j) {
-      
-      unsigned char data;
-      // create an arbitrary RBG code mapping values taken by imageHost
-      data = imageHost(i,j) % 4 * 64;
-      fwrite(&data,1,1,myfile);
-      data = imageHost(i,j) % 8 * 32;
-      fwrite(&data,1,1,myfile);
-      data = imageHost(i,j) % 16 * 16;
-      fwrite(&data,1,1,myfile);
+    myfile << "P6 " << constants.WIDTH << ' ' << constants.HEIGHT << " 255\n";
+    for(unsigned int i=0; i<constants.WIDTH; ++i)
+    {
+        for(unsigned int j=0; j<constants.HEIGHT; ++j)
+        {
+            // create an arbitrary RBG code mapping values taken by imageHost
+            myfile << static_cast<unsigned char>(imageHost(i, j) % 4 * 64)
+                   << static_cast<unsigned char>(imageHost(i, j) % 8 * 32)
+                   << static_cast<unsigned char>(imageHost(i, j) % 16 * 16);
+        }
     }
-  }
-  
-  fclose(myfile);
-  
 } // save_ppm
