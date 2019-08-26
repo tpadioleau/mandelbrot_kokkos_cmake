@@ -29,6 +29,6 @@ include(initBuildType)
 #
 
 # first build kokkos
-add_subdirectory(external/kokkos)
+add_subdirectory(lib/kokkos)
 
 add_subdirectory(src)
