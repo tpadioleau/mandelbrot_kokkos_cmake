@@ -22,33 +22,33 @@ void compute_mandelbrot_set(int argc, char* argv[])
     Constants constants(default_size);
 
     // prepare data array for Mandelbrot set computation
-    DataArray     image     = DataArray("image", constants.WIDTH, constants.HEIGHT);
-    DataArrayHost imageHost = Kokkos::create_mirror_view(image);
+    DualDataArray image = DualDataArray("image", constants.WIDTH, constants.HEIGHT);
 
     /*
      * Actual computation
      */
     {
-        MandelbrotFunctor functor(image, constants);
+        MandelbrotFunctor functor(image.view_device(), constants);
         using range2d_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>,
                                                 Kokkos::IndexType<int>>;
         range2d_t range({0, 0}, {constants.WIDTH, constants.HEIGHT});
         Kokkos::parallel_for(range, functor);
+        image.modify_device();
         Kokkos::fence();
     }
 
     std::cout << "end of mandelbrot loop reached ...\n";
 
     // copy back results from device to host
-    Kokkos::deep_copy(imageHost, image);
+    image.sync_host();
 
-    write_screen(imageHost, constants);
+    write_screen(image.view_host(), constants);
 
     // save color ppm file
     if (1)
     {
         std::string filename("mandelbrot.ppm");
-        save_ppm(imageHost, filename, constants);
+        save_ppm(image.view_host(), filename, constants);
     }
 } // compute_mandelbrot_set
 
@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
      * If CUDA is enabled, Kokkos will try to use the default GPU, i.e. GPU #0 if you
      * have multiple GPUs.
      */
-    Kokkos::initialize(argc, argv);
+    Kokkos::ScopeGuard scope (argc, argv);
 
     std::cout << "##########################\n";
     std::cout << "KOKKOS CONFIG             \n";
@@ -78,8 +78,6 @@ int main(int argc, char* argv[])
     std::cout << "##########################" << std::endl;
 
     compute_mandelbrot_set(argc, argv);
-
-    Kokkos::finalize();
 
     return EXIT_SUCCESS;
 }

@@ -2,14 +2,16 @@
 #define KOKKOS_SHARED_HPP_
 
 #include <Kokkos_Core.hpp>
+#include <Kokkos_DualView.hpp>
 
 using Device = Kokkos::DefaultExecutionSpace;
 
 // Data array for image
-typedef Kokkos::View<unsigned char**, Device> DataArray;
+using DataArray = Kokkos::View<unsigned char**, Device>;
+using DualDataArray = Kokkos::DualView<unsigned char**, Device>;
 
 // host mirror
-typedef DataArray::HostMirror DataArrayHost;
+using DataArrayHost = DataArray::HostMirror;
 
 /**
  * Retrieve cartesian coordinate from index, using memory layout information.
