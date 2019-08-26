@@ -2,3 +2,6 @@
 	path = lib/kokkos
 	url = https://github.com/kokkos/kokkos
 	branch = develop
+[submodule "lib/pngwriter"]
+	path = lib/pngwriter
+	url = https://github.com/pngwriter/pngwriter.git

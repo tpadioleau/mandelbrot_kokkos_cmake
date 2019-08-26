@@ -9,7 +9,8 @@ void save_ppm(DataArrayHost imageHost,
 	      const std::string& filename,
 	      const Constants& constants)
 {
-    std::fstream myfile (filename, std::fstream::out | std::fstream::trunc);
+    std::string filename_ppm (filename + ".ppm");
+    std::fstream myfile (filename_ppm, std::fstream::out | std::fstream::trunc);
 
     myfile << "P6 " << constants.WIDTH << ' ' << constants.HEIGHT << " 255\n";
     for(unsigned int i=0; i<constants.WIDTH; ++i)

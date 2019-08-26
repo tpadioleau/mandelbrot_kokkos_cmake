@@ -5,6 +5,7 @@
 #include "kokkos_shared.hpp"
 #include "mandelbrot.hpp"
 #include "write_screen.hpp"
+#include "write_png.hpp"
 #include "write_ppm.hpp"
 
 void compute_mandelbrot_set(int argc, char* argv[])
@@ -45,9 +46,13 @@ void compute_mandelbrot_set(int argc, char* argv[])
     write_screen(image.view_host(), constants);
 
     // save color ppm file
+    std::string filename("mandelbrot");
     if (1)
     {
-        std::string filename("mandelbrot.ppm");
+        save_png(image.view_host(), filename, constants);
+    }
+    else
+    {
         save_ppm(image.view_host(), filename, constants);
     }
 } // compute_mandelbrot_set
