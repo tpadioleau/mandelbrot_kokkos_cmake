@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 3.5)
 
 project(mandelbrot_kokkos_cmake LANGUAGES CXX)
 
-# C++11 is for Kokkos
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 #
 # default local cmake macro repository
 #
