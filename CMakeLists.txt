@@ -26,5 +26,6 @@ include(initBuildType)
 
 # first build kokkos
 add_subdirectory(lib/kokkos)
+add_subdirectory(lib/pngwriter)
 
 add_subdirectory(src)
