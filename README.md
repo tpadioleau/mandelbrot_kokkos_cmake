@@ -1,3 +1,5 @@
+![mandelbrot](https://github.com/tpadioleau/mandelbrot_kokkos_cmake/master/mandelbrot.png)
+
 Mandelbrot_kokkos_cmake
 =======================
 
